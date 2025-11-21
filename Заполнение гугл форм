@@ -1,0 +1,101 @@
+
+import requests
+import random
+import time
+
+FORM_URL = ''
+
+FORM_FIELDS_MAP = {
+    'entry.1947160432': [
+        'Сетевой инженер/Администратор',
+        'Руководитель IT-отдела /IT-директор',
+        'Специалист по закупкам',
+        'Другое'
+    ], # Ваша основная роль в компании?
+    'entry.1035762453': [
+        'Государственный',
+        'Коммерческий(крупный бизнес)',
+        'Коммерческий (средний/малый бизнес)'
+    ], # Сектор вашей компании
+    'entry.413189683': [
+        'Cisco',
+        'Huawei / H3C',
+        'Eltex / QTECH',
+        'MikroTik',
+        'Juniper / HPE',
+        'Другие российские бренды (Yadro, НАГ и др.)',
+        'Другие азиатские бренды (Ruijie, DCN и др.)'
+    ], # Оборудование каких производителей сейчас составляет основу вашей сети?
+    'entry.1995773815': [
+        'Цена',
+        'Технические характеристики (производительность, функционал)',
+        'Надежность и стабильность работы',
+        'Наличие на складе в РФ и быстрые сроки поставки',
+        'Качество и доступность технической поддержки в России',
+        'Наличие в реестре Минпромторга (ТРПП)',
+        'Простота интеграции и совместимость с имеющимся оборудованием'
+    ], # Выберите 3 наиболее важных для вас критерия при выборе нового сетевого оборудования:
+    'entry.1992824444': [
+        'Переход на российское оборудовани',
+        'Переход на китайское оборудование',
+        'Поиск путей закупки западного оборудования',
+        'Комбинирование разных подходов'
+    ], # Какой стратегии придерживается ваша компания при обновлении сетевого парка?
+    'entry.1966885365': [
+        'Недостаточный функционал',
+        'Проблемы со стабильностью работы',
+        'Сложности интеграции',
+        'Неудобное управление',
+        'Нехватка документации и экспертов',
+        'Цена неконкурентна',
+        'Существенных проблем нет'
+    ] # С какими реальными проблемами вы столкнулись при использовании российского сетевого оборудования?
+}
+
+def generate_synthetic_data():
+    data = {}
+    # For single-choice questions, pick one option
+    data['entry.1947160432'] = random.choice(FORM_FIELDS_MAP['entry.1947160432'])
+    data['entry.1035762453'] = random.choice(FORM_FIELDS_MAP['entry.1035762453'])
+    data['entry.1992824444'] = random.choice(FORM_FIELDS_MAP['entry.1992824444'])
+
+    # For multiple-choice questions, pick 1 to 3 options
+    data['entry.413189683'] = random.sample(FORM_FIELDS_MAP['entry.413189683'], k=random.randint(1, 3))
+    data['entry.1995773815'] = random.sample(FORM_FIELDS_MAP['entry.1995773815'], k=random.randint(1, 3))
+    data['entry.1966885365'] = random.sample(FORM_FIELDS_MAP['entry.1966885365'], k=random.randint(1, 3))
+
+    return data
+
+def submit_form(num_submissions):
+    print(f'Начинаю отправку {num_submissions} форм...')
+    for i in range(num_submissions):
+        payload = generate_synthetic_data()
+        # Google Forms handles multiple selections for checkboxes by repeating the entry ID
+        # So we need to format the payload correctly for lists.
+        formatted_payload = {}
+        for key, value in payload.items():
+            if isinstance(value, list):
+                for item in value:
+                    # For Google Forms, multiple selections for a single entry ID are sent as repeated key-value pairs
+                    # e.g., entry.12345=Option1&entry.12345=Option2
+                    # The requests library handles this correctly if we pass a list of values for a key.
+                    formatted_payload.setdefault(key, []).append(item)
+            else:
+                formatted_payload[key] = value
+
+        try:
+            response = requests.post(FORM_URL, data=formatted_payload)
+            if response.status_code == 200:
+                print(f'Отправка {i+1}/{num_submissions} успешна. Данные: {formatted_payload}')
+            else:
+                print(f'Отправка {i+1}/{num_submissions} не удалась. Статус: {response.status_code}, Ответ: {response.text}')
+        except requests.exceptions.RequestException as e:
+            print(f'Ошибка при отправке {i+1}/{num_submissions}: {e}')
+        time.sleep(random.uniform(1, 3)) # Задержка между отправками для имитации человеческого поведения
+    print(f'Завершено {num_submissions} отправок.')
+
+if __name__ == '__main__':
+    # You can change the number of submissions here
+    num_submissions = 5 # Let's start with 5 submissions for testing
+    submit_form(num_submissions)
+
