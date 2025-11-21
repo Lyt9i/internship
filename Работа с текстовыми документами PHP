@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <title>Лабораторная работа №4 — Вариант 16</title>
+</head>
+<body>
+    <p><b style="color:brown;">Лабораторная работа №4.</b> Разработка на языке PHP программ для работы с файлами</p>
+    <p>
+        Группа 23ИЭ1б. Лутфулин А.М.<br>
+        -------------------------------------<br>
+        Вариант 16. Ввод данных: Фамилия, Хобби, Любимый вид спорта, Звери в зоопарке, Комментарий.
+    </p>
+    <hr>
+
+    <form method="post">
+        <p>Фамилия: <input type="text" name="surname"></p>
+
+        <p>Хобби (множественный выбор):<br>
+            <select name="hobbies[]" multiple size="4">
+                <option>Рисование</option>
+                <option>Кино</option>
+                <option>Туризм</option>
+                <option>Музыка</option>
+            </select>
+        </p>
+
+        <p>Любимый вид спорта:<br>
+            <input type="radio" name="sport" value="Триатлон"> Триатлон<br>
+            <input type="radio" name="sport" value="Лыжные гонки"> Лыжные гонки<br>
+            <input type="radio" name="sport" value="Гимнастика"> Гимнастика
+        </p>
+
+        <p>Звери в зоопарке:<br>
+            <input type="checkbox" name="animals[]" value="Павиан"> Павиан<br>
+            <input type="checkbox" name="animals[]" value="Шимпанзе"> Шимпанзе<br>
+            <input type="checkbox" name="animals[]" value="Горилла"> Горилла<br>
+            <input type="checkbox" name="animals[]" value="Мартышка"> Мартышка
+        </p>
+
+        <p>Комментарий:<br>
+            <textarea name="comment" rows="3" cols="40"></textarea>
+        </p>
+
+        <p><input type="submit" value="Отправить"></p>
+    </form>
+    <hr>
+
+<?php
+$file = "t.txt";
+
+$allowed_hobbies = ["Рисование", "Кино", "Туризм", "Музыка"];
+$allowed_sports = ["Триатлон", "Лыжные гонки", "Гимнастика"];
+$allowed_animals = ["Павиан", "Шимпанзе", "Горилла", "Мартышка"];
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $surname = trim($_POST["surname"] ?? "");
+    $hobbies = $_POST["hobbies"] ?? [];
+    $sport = $_POST["sport"] ?? "";
+    $animals = $_POST["animals"] ?? [];
+    $comment = trim($_POST["comment"] ?? "");
+
+    $errors = [];
+
+    if ($surname == "") $errors[] = "Поле 'Фамилия' не должно быть пустым.";
+    foreach ($hobbies as $h) {
+        if (!in_array($h, $allowed_hobbies)) $errors[] = "Недопустимое хобби: $h";
+    }
+    if ($sport == "" || !in_array($sport, $allowed_sports)) $errors[] = "Выберите корректный вид спорта.";
+    foreach ($animals as $a) {
+        if (!in_array($a, $allowed_animals)) $errors[] = "Недопустимое животное: $a";
+    }
+
+    if (empty($errors)) {
+        $line = date("Y-m-d H:i:s") . "|" . $surname . "|" . implode(",", $hobbies) . "|" . $sport . "|" . implode(",", $animals) . "|" . str_replace(["\r","\n"], " ", $comment) . "\n";
+        $f = fopen($file, "a");
+        fwrite($f, $line);
+        fclose($f);
+
+        echo "<p style='color:green;'>✅ Данные успешно записаны в файл!</p>";
+
+        echo "<h3>Введённые данные:</h3>";
+        echo "<table border='1' cellspacing='0' cellpadding='5'>
+                <tr><th>Фамилия</th><th>Хобби</th><th>Спорт</th><th>Звери</th><th>Комментарий</th></tr>
+                <tr>
+                    <td>" . htmlspecialchars($surname) . "</td>
+                    <td>" . htmlspecialchars(implode(', ', $hobbies)) . "</td>
+                    <td>" . htmlspecialchars($sport) . "</td>
+                    <td>" . htmlspecialchars(implode(', ', $animals)) . "</td>
+                    <td>" . htmlspecialchars($comment) . "</td>
+                </tr>
+              </table>";
+
+        echo "<h3>Содержимое файла t.txt:</h3>";
+        if (file_exists($file) && filesize($file) > 0) {
+            $lines = file($file);
+            echo "<table border='1' cellspacing='0' cellpadding='5'>
+                    <tr><th>#</th><th>Дата</th><th>Фамилия</th><th>Хобби</th><th>Спорт</th><th>Звери</th><th>Комментарий</th></tr>";
+            foreach ($lines as $i => $lineText) {
+                $parts = explode('|', trim($lineText));
+                echo "<tr>";
+                echo "<td>" . ($i + 1) . "</td>";
+                echo "<td>" . htmlspecialchars($parts[0] ?? '') . "</td>";
+                echo "<td>" . htmlspecialchars($parts[1] ?? '') . "</td>";
+                echo "<td>" . htmlspecialchars($parts[2] ?? '') . "</td>";
+                echo "<td>" . htmlspecialchars($parts[3] ?? '') . "</td>";
+                echo "<td>" . htmlspecialchars($parts[4] ?? '') . "</td>";
+                echo "<td>" . htmlspecialchars($parts[5] ?? '') . "</td>";
+                echo "</tr>";
+            }
+            echo "</table>";
+        } else {
+            echo "<p>Файл пуст или не найден.</p>";
+        }
+    } else {
+        echo "<div style='color:red;'><b>Ошибки:</b><ul>";
+        foreach ($errors as $e) {
+            echo "<li>" . htmlspecialchars($e) . "</li>";
+        }
+        echo "</ul></div>";
+    }
+}
+?>
+</body>
+</html>
